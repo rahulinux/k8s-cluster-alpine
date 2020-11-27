@@ -12,7 +12,7 @@ kubeadm init --cri-socket /run/containerd/containerd.sock \
              --pod-network-cidr=10.244.0.0/16 \
              --v=5 || true
 
-status=$(rc-service kubelet start)
+status=$(rc-service kubelet start 2>&1)
 
 if ! echo $status | grep -qi "already"
 then
