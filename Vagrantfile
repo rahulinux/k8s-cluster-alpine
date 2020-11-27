@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
         v.customize ["modifyvm", :id, "--cableconnected1", "on"]
     end
 
-    config.vm.define "kmaster" do |master|
+    config.vm.define "kmaster", primary: true do |master|
         master.vm.box = IMAGE_NAME
         master.vm.box_version = IMAGE_VERSION
         master.vm.network "private_network", ip: "192.168.10.10"
@@ -27,7 +27,7 @@ Vagrant.configure("2") do |config|
         master.vm.provision "file", source: "scripts/.", destination: "/home/vagrant"
         master.vm.provision :shell, path: "scripts/bootstrap.sh", privileged: true
         master.vm.provision :shell, path: "scripts/master.sh", privileged: true
-        master.trigger.after :up do |trigger|
+        master.trigger.after :provision do |trigger|
           trigger.name = "create token"
           trigger.run = {"inline": "/bin/bash -c 'vagrant ssh kmaster -- \"kubeadm token create --print-join-command 2>&1 | grep ^kubeadm\" > scripts/join_cluster.sh'"}
         end
@@ -45,7 +45,7 @@ Vagrant.configure("2") do |config|
             node.vm.provision "file", source: "scripts/.", destination: "/home/vagrant"
             node.vm.provision :shell, path: "scripts/bootstrap.sh", privileged: true
             node.vm.provision :shell, path: "scripts/join_cluster.sh", privileged: true
-            node.trigger.after :up do |trigger|
+            node.trigger.after :provision do |trigger|
               trigger.name = "Join cluster"
               trigger.run = {"inline": "/bin/bash -c 'cat scripts/join_cluster.sh | sed \"s|^|sudo |\" | vagrant ssh node-#{i} -- '"}
             end
